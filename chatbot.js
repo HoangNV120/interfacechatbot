@@ -208,7 +208,7 @@
         try {
             const sessionId = getSessionId();
 
-            const response = await fetch('https://n8n.ragassist.online/webhook/rag-assist', {
+            const response = await fetch('http://localhost:8000/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -219,14 +219,29 @@
                 })
             });
 
+            // Hide typing indicator
+            chatbot.typingIndicator.style.display = 'none';
+
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                // Try to get error detail from response
+                let errorMessage = "Xin lỗi, tôi không thể xử lý yêu cầu của bạn vào lúc này.";
+
+                try {
+                    const errorData = await response.json();
+                    if (errorData.detail) {
+                        errorMessage = errorData.detail;
+                    }
+                } catch (e) {
+                    // If can't parse JSON, use default message
+                    console.error('Error parsing error response:', e);
+                }
+
+                // Add error message from server
+                addMessage(errorMessage, 'bot');
+                return;
             }
 
             const data = await response.json();
-
-            // Hide typing indicator
-            chatbot.typingIndicator.style.display = 'none';
 
             // Add bot response
             addMessage(data.output || "Xin lỗi, tôi không thể xử lý yêu cầu của bạn vào lúc này.", 'bot');
@@ -237,8 +252,8 @@
             // Hide typing indicator
             chatbot.typingIndicator.style.display = 'none';
 
-            // Add error message
-            addMessage("Xin lỗi, đã xảy ra lỗi khi xử lý yêu cầu của bạn. Vui lòng thử lại sau.", 'bot');
+            // Add network error message
+            addMessage("Có lỗi kết nối. Vui lòng thử lại sau.", 'bot');
         }
     }
 
